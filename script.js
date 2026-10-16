@@ -179,6 +179,13 @@ const viewerBody = $("#viewer-body");
 const state = { category: "all", currentId: null, page: null };
 const PAGES = ["about", "contact"];
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const isPhone = window.matchMedia("(max-width: 820px)");
+
+// On phones, opening a work adds a history entry, so the phone's own back
+// gesture / back button closes the detail instead of leaving the site
+let pushedDetail = false;
+let ignorePop = false;
+let swipeDir = 0; // set by a swipe, so the next work slides in from that side
 
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({
@@ -377,15 +384,22 @@ function showDetail(hash) {
   markCurrent();
   markNav();
   updateCount();
-  history.replaceState(null, "", `#${hash}`);
+  if (!wasOpen && isPhone.matches) {
+    history.pushState({ detail: true }, "", `#${hash}`);
+    pushedDetail = true;
+  } else {
+    history.replaceState(history.state, "", `#${hash}`);
+  }
 
-  // Fade the new content in when switching
+  // Fade the new content in when switching (sideways after a swipe)
   if (wasOpen && !reduceMotion.matches) {
+    const from = swipeDir ? `translateX(${swipeDir * 60}px)` : "translateY(10px)";
     detailContent.animate(
-      [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }],
+      [{ opacity: 0, transform: from }, { opacity: 1, transform: "none" }],
       { duration: 320, easing: "cubic-bezier(.22,.8,.2,1)" }
     );
   }
+  swipeDir = 0;
   return wasOpen;
 }
 
@@ -420,6 +434,12 @@ function openPage(name) {
 
 function closeDetail() {
   if (!isOpen()) return;
+  // drop the history entry added when the detail opened on a phone
+  if (pushedDetail) {
+    pushedDetail = false;
+    ignorePop = true;
+    history.back();
+  }
   const id = state.currentId;
   state.currentId = null;
   state.page = null;
@@ -677,6 +697,89 @@ document.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("hashchange", openFromHash);
+
+// Phone back gesture / back button while a work is open: close it
+window.addEventListener("popstate", () => {
+  if (ignorePop) {
+    ignorePop = false;
+    return;
+  }
+  if (pushedDetail && !history.state?.detail) {
+    pushedDetail = false;
+    closeDetail();
+  }
+});
+
+/* ---------- Phone swipes in the detail view:
+   swipe left / right = next / previous work,
+   swipe right from the left edge = back to the list ---------- */
+const EDGE = 28;        // px from the left edge that count as an edge swipe
+const SWIPE_MIN = 70;   // px a swipe has to travel
+let touch = null;
+
+function resetDrag() {
+  detailEl.style.transition = "";
+  detailEl.style.transform = "";
+}
+
+detailEl.addEventListener("touchstart", (e) => {
+  if (!isPhone.matches || e.touches.length !== 1 || e.target.closest("video")) return;
+  const t = e.touches[0];
+  touch = { x: t.clientX, y: t.clientY, dx: 0, edge: t.clientX < EDGE, dir: null };
+}, { passive: true });
+
+detailEl.addEventListener("touchmove", (e) => {
+  if (!touch) return;
+  const t = e.touches[0];
+  const dx = t.clientX - touch.x;
+  const dy = t.clientY - touch.y;
+  // decide once whether this is a sideways swipe or a normal scroll
+  if (!touch.dir) {
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    touch.dir = Math.abs(dx) > Math.abs(dy) * 1.3 ? "h" : "v";
+  }
+  if (touch.dir !== "h") return;
+  touch.dx = dx;
+  // the pane follows the finger: fully for the edge swipe, a little for switching
+  const pull = touch.edge ? Math.max(0, dx) : dx * 0.3;
+  detailEl.style.transition = "none";
+  detailEl.style.transform = `translateX(${pull}px)`;
+}, { passive: true });
+
+detailEl.addEventListener("touchend", () => {
+  if (!touch) return;
+  const { dir, dx, edge } = touch;
+  touch = null;
+  resetDrag();
+  if (dir !== "h") return;
+  if (edge && dx > SWIPE_MIN) {
+    closeDetail();
+  } else if (!edge && Math.abs(dx) > SWIPE_MIN && state.currentId) {
+    swipeDir = dx < 0 ? 1 : -1;
+    step(swipeDir);
+  }
+});
+
+detailEl.addEventListener("touchcancel", () => {
+  touch = null;
+  resetDrag();
+});
+
+// Full-screen viewer: swipe left / right to flip images
+let viewerTouch = null;
+viewer.addEventListener("touchstart", (e) => {
+  const t = e.touches[0];
+  viewerTouch = { x: t.clientX, y: t.clientY };
+}, { passive: true });
+
+viewer.addEventListener("touchend", (e) => {
+  if (!viewerTouch) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - viewerTouch.x;
+  const dy = t.clientY - viewerTouch.y;
+  viewerTouch = null;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) stepViewer(dx < 0 ? 1 : -1);
+});
 
 /* ---------- Init ---------- */
 $("#year").textContent = new Date().getFullYear();
