@@ -874,6 +874,12 @@ a {
     background: rgba(250, 250, 250, 0.97);
     opacity: 1;
     transform: translateX(100%);
+    /* the browser only scrolls up/down here; sideways swipes go to the page's own gestures */
+    touch-action: pan-y;
+  }
+
+  .detail-pane * {
+    touch-action: pan-y;
   }
 
   .app.is-open .detail-pane {

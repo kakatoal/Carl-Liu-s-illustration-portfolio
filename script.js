@@ -714,7 +714,7 @@ window.addEventListener("popstate", () => {
    swipe left / right = next / previous work,
    swipe right from the left edge = back to the list ---------- */
 const EDGE = 28;        // px from the left edge that count as an edge swipe
-const SWIPE_MIN = 70;   // px a swipe has to travel
+const SWIPE_MIN = 50;   // px a swipe has to travel
 let touch = null;
 
 function resetDrag() {
@@ -736,7 +736,7 @@ detailEl.addEventListener("touchmove", (e) => {
   // decide once whether this is a sideways swipe or a normal scroll
   if (!touch.dir) {
     if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-    touch.dir = Math.abs(dx) > Math.abs(dy) * 1.3 ? "h" : "v";
+    touch.dir = Math.abs(dx) > Math.abs(dy) * 1.1 ? "h" : "v";
   }
   if (touch.dir !== "h") return;
   touch.dx = dx;
