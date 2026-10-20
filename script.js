@@ -27,6 +27,13 @@
    3D backgrounds (made in Blender): add type: "3d". Own section
    after the backgrounds, laid out the same way.
 
+   Interactive (websites, games): add type: "interactive". site is
+   a live page embedded so visitors can try it (on phones only a
+   link is shown); siteSize: [width, height] is the size the site
+   is drawn at (default [1600, 900]). video works as for animations
+   but doesn't autoplay. sheetsLayout: "grid" shows the sheets two
+   per row.
+
    Concept art (any work): sheets are shown one after another
    under the description, before year etc.
    e.g. sheets: ["images/character.jpg", "images/storyboard.jpg"].
@@ -173,6 +180,49 @@ const works = [
     darkText: true,
     color: "#d8d8d8",
   },
+  {
+    id: "visual-symbol-book",
+    type: "interactive",
+    title: "A Visual Symbol Book",
+    description: "A book website — I designed the layout and drew everything in it. To make graphics transformations more intuitive (and because I'm not a big reader), I built a game into it that helps me remember them.",
+    site: "https://kakatoal.github.io/A-book-with-symbols/",
+    video: "videos/visual-symbol-book.mp4",
+    duration: "0:46",
+    cover: "images/visual-symbol-book-00.jpg",
+    coverPosition: "center 50%",
+    darkText: true,
+    color: "#d6d6d6",
+    sheetsTitle: "Book Pages",
+    sheetsLayout: "grid",
+    sheets: [
+      "images/visual-symbol-book-01.jpg",
+      "images/visual-symbol-book-02.jpg",
+      "images/visual-symbol-book-03.jpg",
+      "images/visual-symbol-book-04.jpg",
+      "images/visual-symbol-book-05.jpg",
+      "images/visual-symbol-book-06.jpg",
+      "images/visual-symbol-book-07.jpg",
+      "images/visual-symbol-book-08.jpg",
+      "images/visual-symbol-book-09.jpg",
+      "images/visual-symbol-book-10.jpg",
+      "images/visual-symbol-book-11.jpg",
+      "images/visual-symbol-book-12.jpg",
+      "images/visual-symbol-book-13.jpg",
+    ],
+  },
+  {
+    id: "journey-east",
+    type: "interactive",
+    title: "Journey East",
+    description: "Inspired by the game Marathon and JoJo's Bizarre Adventure Part 8, I created a visual novel game. It brings together a lot of techniques — my own drawings, SCAll design and p5.js — and I also used AI to generate normal maps and masks for some of the effects. Since it's hard to capture in screenshots, I've put the website and a walkthrough here so you can experience it yourself.",
+    site: "https://kakatoal.com/",
+    siteSize: [1705, 832], // the recording (2558x1248) at 150% Windows display scaling
+    video: "videos/journey-east.mp4",
+    duration: "3:50",
+    cover: "images/journey-east-cover.jpg",
+    darkText: true,
+    color: "#e8e2da",
+  },
 ];
 
 /* ========================================================== */
@@ -234,6 +284,7 @@ const GROUPS = [
   { kind: "illustration", label: "Illustration" },
   { kind: "background", label: "Background" },
   { kind: "3d", label: "3D Background" },
+  { kind: "interactive", label: "Interactive" },
 ];
 
 function kindOf(work) {
@@ -261,6 +312,7 @@ const PLAY_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v1
 const SET_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="currentColor"/></svg>`;
 
 function badgeHTML(w) {
+  if (w.site) return `<span class="row-play row-play--text">Try it</span>`;
   if (isAnimation(w)) {
     return w.video
       ? `<span class="row-play">${PLAY_ICON}${esc(w.duration)}</span>`
@@ -330,8 +382,33 @@ function stackItemHTML(src, alt) {
     </button>`;
 }
 
-function stackHTML(list, alt) {
-  return `<div class="detail-stack">${list.map((src) => stackItemHTML(src, alt)).join("")}</div>`;
+function stackHTML(list, alt, grid = false) {
+  return `<div class="detail-stack${grid ? " detail-stack--grid" : ""}">${list.map((src) => stackItemHTML(src, alt)).join("")}</div>`;
+}
+
+// A live website, drawn at its best size (siteSize, default 1600x900)
+// and scaled down to fit the pane
+let siteObserver;
+
+function siteHTML(w) {
+  const [width, height] = w.siteSize || [1600, 900];
+  return `
+    <div class="detail-site" style="aspect-ratio:${width} / ${height}" data-width="${width}">
+      <iframe src="${esc(w.site)}" title="${esc(w.title)}" width="${width}" height="${height}" loading="lazy" allow="fullscreen; autoplay"></iframe>
+    </div>
+    <p class="site-actions">
+      <a class="site-link" href="${esc(w.site)}" target="_blank" rel="noopener">Open the full site ↗</a>
+    </p>`;
+}
+
+function fitSite() {
+  siteObserver?.disconnect();
+  const box = detailContent.querySelector(".detail-site");
+  if (!box) return;
+  siteObserver = new ResizeObserver(() => {
+    box.style.setProperty("--site-scale", box.clientWidth / Number(box.dataset.width));
+  });
+  siteObserver.observe(box);
 }
 
 function renderDetail(w) {
@@ -348,18 +425,19 @@ function renderDetail(w) {
 
   // Animations: a video player (loaded only now). Illustration sets: every piece, one after another.
   // An animation without a video is concept art only: no player, sheets straight away.
+  // A site to try comes first, then a video, then an illustration set's pieces.
   let media = "";
-  if (isAnimation(w) && w.video) {
+  if (w.site) media += siteHTML(w);
+  if (w.video) {
     const poster = w.cover ? ` poster="${esc(w.cover)}"` : "";
-    media = `<figure class="detail-figure"><video class="detail-video" src="${esc(w.video)}"${poster} controls muted playsinline preload="metadata"></video></figure>`;
-  } else if (!isAnimation(w) && w.images?.length) {
-    media = stackHTML(w.images, w.title);
+    media += `<figure class="detail-figure"><video class="detail-video" src="${esc(w.video)}"${poster} controls muted playsinline preload="metadata"></video></figure>`;
   }
+  if (!isAnimation(w) && w.images?.length) media += stackHTML(w.images, w.title);
 
   // The divider heading only separates the sheets from a video/pieces above them
   const sheets = w.sheets?.length
     ? `${media ? `<h3 class="sheets-title">${esc(w.sheetsTitle || "Concept Art")}</h3>` : ""}
-       ${stackHTML(w.sheets, `${w.title} concept art`)}`
+       ${stackHTML(w.sheets, `${w.title} concept art`, w.sheetsLayout === "grid")}`
     : "";
 
   detailContent.innerHTML = `
@@ -427,7 +505,8 @@ function openWork(id, { scroll = false } = {}) {
   const wasOpen = showDetail(id);
 
   // Start the animation right away, muted; viewers turn the sound on with the player's controls
-  detailContent.querySelector("video")?.play().catch(() => {});
+  if (isAnimation(w)) detailContent.querySelector("video")?.play().catch(() => {});
+  fitSite();
 
   // After the list narrows, keep the selected row in view
   if (scroll || !wasOpen) {
@@ -459,6 +538,7 @@ function closeDetail() {
   state.page = null;
 
   detailContent.querySelector("video")?.pause();
+  detailContent.querySelector(".detail-site iframe")?.remove(); // stop the embedded site (sound, game loop)
   app.classList.remove("is-open");
   detailEl.setAttribute("inert", "");
   detailEl.setAttribute("aria-hidden", "true");

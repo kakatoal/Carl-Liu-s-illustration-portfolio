@@ -686,6 +686,54 @@ a {
   background: #d0d0d0;
 }
 
+/* Two per row (e.g. book pages), still flush */
+.detail-stack--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.detail-stack--grid > * + * {
+  border-top: 0;
+}
+
+/* Live website to try, drawn at desktop size (1600x900) and scaled to fit */
+.detail-site {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #e4e4e4;
+}
+
+.detail-site iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform: scale(var(--site-scale, 0.5));
+  transform-origin: 0 0;
+}
+
+.site-actions {
+  margin: 14px var(--pad) 32px;
+  text-align: center;
+}
+
+.site-link {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.site-link:hover {
+  opacity: 0.8;
+}
+
 /* About / Contact pages */
 .page-body {
   font-size: 1.1rem;
@@ -884,6 +932,15 @@ a {
 
   .app.is-open .detail-pane {
     transform: none;
+  }
+
+  /* too small to play on a phone: just offer the link */
+  .detail-site {
+    display: none;
+  }
+
+  .site-actions {
+    margin-top: 0;
   }
 
   .icon-close { display: none; }
