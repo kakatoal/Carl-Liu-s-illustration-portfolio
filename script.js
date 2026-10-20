@@ -24,6 +24,9 @@
    section after the illustrations, one wide row each; images
    works the same as for illustrations.
 
+   3D backgrounds (made in Blender): add type: "3d". Own section
+   after the backgrounds, laid out the same way.
+
    Concept art (any work): sheets are shown one after another
    under the description, before year etc.
    e.g. sheets: ["images/character.jpg", "images/storyboard.jpg"].
@@ -160,6 +163,16 @@ const works = [
     coverPosition: "center 50%",
     color: "#4a4038",
   },
+  {
+    id: "transit-tunnel",
+    type: "3d",
+    title: "Transit Tunnel",
+    description: "Background concept design made in Blender.",
+    images: ["images/3d-transit-tunnel.jpg"],
+    coverPosition: "center 70%",
+    darkText: true,
+    color: "#d8d8d8",
+  },
 ];
 
 /* ========================================================== */
@@ -220,6 +233,7 @@ const GROUPS = [
   { kind: "animation", label: "Animation" },
   { kind: "illustration", label: "Illustration" },
   { kind: "background", label: "Background" },
+  { kind: "3d", label: "3D Background" },
 ];
 
 function kindOf(work) {
