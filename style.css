@@ -330,6 +330,19 @@ a {
   color: var(--ink);
 }
 
+/* Title centred at the top of the cover (textTop: true) */
+.work-row--top .row-text {
+  top: 22px;
+  bottom: auto;
+  align-items: center;
+  text-align: center;
+}
+
+.app.is-open .work-row--top .row-text {
+  top: 12px;
+  bottom: auto;
+}
+
 /* "Animation" / "Illustration" labels, pinned while scrolling */
 .group-label {
   position: sticky;
@@ -657,6 +670,15 @@ a {
   height: 1px;
   background: var(--ink);
   opacity: 0.25;
+}
+
+/* Game concept sections: text right under its heading, paragraphs close together */
+.sheets-title + .detail-desc {
+  margin-top: 0;
+}
+
+.detail-desc + .detail-desc {
+  margin-top: 1em;
 }
 
 /* Full-width images stacked flush: illustration sets and concept art */

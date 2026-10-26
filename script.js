@@ -6,7 +6,8 @@
    block is shown). Optional fields: category, description,
    medium, size, tags, coverPosition (which part of the cover
    shows in the list, e.g. "center bottom"), darkText (true =
-   black title in the list, for light covers).
+   black title in the list, for light covers), textTop (true =
+   title centred at the top of the cover instead of bottom left).
 
    Illustrations: each entry is a set of short pieces, shown
    two per row in the list. images lists every piece in the
@@ -38,8 +39,65 @@
    under the description, before year etc.
    e.g. sheets: ["images/character.jpg", "images/storyboard.jpg"].
    sheetsTitle changes the divider heading (default "Concept Art").
+
+   Game concepts: add type: "game". Own section, listed before the
+   animations. images are shown first, then the description, then
+   each of sections: { title, text, images } in turn (a divider
+   heading, the text, then its images). description and text can
+   be a list of paragraphs.
    ========================================================== */
 const works = [
+  {
+    id: "cat-samurai",
+    type: "game",
+    title: "Cat Samurai",
+    description: [
+      "A reference photo of three cats fighting reminded me of an illustration I've always loved, of three samurai cats together, so I set out to design a 2D side-scrolling action game set among Edo-period Japanese buildings. For the look, I blended acid graphics with graphic design to bring out the art style I was after.",
+      "For the gameplay twist, I added a tile-claiming mechanic: players steer the cat samurai across the floor tiles to claim them. If the enemies take over most of the tiles, it's game over on the spot; claim every tile and you win. So while fighting, players also have to keep an eye on how much of the floor they hold. On top of that, each of the three cats attacks with a different ability, refining and enriching the classic side-scroller formula.",
+    ],
+    cover: "images/cat-samurai-final-1.jpg",
+    coverPosition: "center 60%",
+    textTop: true,
+    color: "#2a2a30",
+    images: [
+      "images/cat-samurai-final-1.jpg",
+      "images/cat-samurai-final-2.jpg",
+    ],
+    sections: [
+      {
+        title: "Environment Design",
+        text: "I wanted to try painting the scene in a 3D cartoon style, stylising the model with brushwork on top. Drawing on Japanese village towns, I first painted a basic reference, then built the main structure in Blender, and finally brought it into a painting program for texturing. For the camera I went for a tilt-shift feel, keeping the focus on the middle of the frame.",
+        images: [
+          "images/cat-samurai-env-sketch.jpg",
+          "images/cat-samurai-env-render.jpg",
+          "images/cat-samurai-env-final.jpg",
+        ],
+      },
+      {
+        title: "Character Design",
+        text: [
+          "The three cats are an archer, a brawler and a swordsman, and all of their weapons are fish-themed. Their enemies are sharks, both regular ones and shield-bearing ones that charge, and they fight the cat samurai so they won't get eaten.",
+          "For the designs I combined samurai clothing with shape language to tell the cats apart: the archer is a semicircle, the swordsman a triangle and the brawler a square. The sharks' heads are transparent, and when one is hit, the water inside sloshes in waves.",
+        ],
+        images: [
+          "images/cat-samurai-char-cat-sketch.jpg",
+          "images/cat-samurai-char-shark-sketch.jpg",
+          "images/cat-samurai-char-cat-final.jpg",
+          "images/cat-samurai-char-shark-final.jpg",
+        ],
+      },
+      {
+        title: "UI Design",
+        text: "For the UI I drew on acid graphic design and the style of Ash Thorp, an artist I admire, using lots of blur and noise to add texture. Before starting, I put together a reference board and gathered my earlier designs to work from, so the UI always had a clear direction and scope.",
+        images: [
+          "images/cat-samurai-ui-style-reference.jpg",
+          "images/cat-samurai-ui-v1.jpg",
+          "images/cat-samurai-ui-v2.jpg",
+          "images/cat-samurai-ui-reference-board.jpg",
+        ],
+      },
+    ],
+  },
   {
     id: "the-life-of-a-chair",
     type: "animation",
@@ -280,6 +338,7 @@ function isAnimation(work) {
 
 /* List sections, in order. A work's type picks its section; no type = illustration */
 const GROUPS = [
+  { kind: "game", label: "Game Concept" },
   { kind: "animation", label: "Animation" },
   { kind: "illustration", label: "Illustration" },
   { kind: "background", label: "Background" },
@@ -312,6 +371,7 @@ const PLAY_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v1
 const SET_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="currentColor"/></svg>`;
 
 function badgeHTML(w) {
+  if (w.type === "game") return `<span class="row-play row-play--text">Concept</span>`;
   if (w.site) return `<span class="row-play row-play--text">Try it</span>`;
   if (isAnimation(w)) {
     return w.video
@@ -323,11 +383,11 @@ function badgeHTML(w) {
 }
 
 function rowHTML(w, number) {
-  const meta = [isAnimation(w) && "Animation", w.category, w.year].filter(Boolean).map(esc).join(" · ");
-  const excerpt = w.description ? `<span class="row-excerpt">${esc(w.description)}</span>` : "";
+  const meta = [isAnimation(w) && "Animation", w.type === "game" && "Game Concept", w.category, w.year].filter(Boolean).map(esc).join(" · ");
+  const excerpt = w.description ? `<span class="row-excerpt">${esc([].concat(w.description)[0])}</span>` : "";
   return `
     <li>
-      <button class="work-row${w.darkText ? " work-row--dark" : ""}" type="button" data-id="${esc(w.id)}" aria-current="${w.id === state.currentId}">
+      <button class="work-row${w.darkText ? " work-row--dark" : ""}${w.textTop ? " work-row--top" : ""}" type="button" data-id="${esc(w.id)}" aria-current="${w.id === state.currentId}">
         <span class="row-media">${coverHTML(w)}</span>
         ${badgeHTML(w)}
         <span class="row-no">No.${String(number).padStart(2, "0")}</span>
@@ -380,6 +440,11 @@ function stackItemHTML(src, alt) {
   return `<button class="stack-btn" type="button" data-zoom aria-label="View full size">
       <img src="${esc(src)}" alt="${esc(alt)}" loading="lazy">
     </button>`;
+}
+
+// One paragraph, or one per item for a list of paragraphs
+function descHTML(text) {
+  return text ? [].concat(text).map((p) => `<p class="detail-desc">${esc(p)}</p>`).join("") : "";
 }
 
 function stackHTML(list, alt, grid = false) {
@@ -440,14 +505,21 @@ function renderDetail(w) {
        ${stackHTML(w.sheets, `${w.title} concept art`, w.sheetsLayout === "grid")}`
     : "";
 
+  // Game concepts: each part gets a heading, its text, then its images
+  const sections = (w.sections || []).map((sec) => `
+    <h3 class="sheets-title">${esc(sec.title)}</h3>
+    ${descHTML(sec.text)}
+    ${sec.images?.length ? stackHTML(sec.images, `${w.title} ${sec.title}`) : ""}`).join("");
+
   detailContent.innerHTML = `
     <header class="detail-head">
       <h2 class="detail-title">${esc(w.title)}</h2>
       <div class="ornament" aria-hidden="true"><span></span><i></i><span></span></div>
     </header>
     ${media}
-    ${w.description ? `<p class="detail-desc">${esc(w.description)}</p>` : ""}
+    ${descHTML(w.description)}
     ${sheets}
+    ${sections}
     <dl class="detail-meta">
       ${meta.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}
     </dl>
